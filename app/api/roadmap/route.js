@@ -15,7 +15,7 @@ export async function POST(req) {
         },
         {
           role: 'user',
-          content: `Create a programming roadmap for someone who wants to build: "${goal}". Their level: ${level}. ${stack ? `They want to use: ${stack}. Build the entire roadmap around these technologies. If the stack is wrong for their goal, still use it but mention better alternatives in the focus field.` : 'Choose the best tech stack for their goal.'}
+          content: `Create a programming roadmap for someone who wants to build: "${goal}". Their level: ${level}. ${stack ? `They want to use: ${stack}.` : 'Choose the best tech stack.'}
 
 Return this exact JSON:
 {
@@ -36,9 +36,21 @@ Return this exact JSON:
       },
       "milestone": "what they can do after this week",
       "resources": [
-        { "type": "video", "title": "YouTube tutorial title", "url": "https://www.youtube.com/results?search_query=topic+tutorial" },
-        { "type": "article", "title": "article title", "url": "https://www.freecodecamp.org or w3schools or mdn real url" },
-        { "type": "docs", "title": "official docs title", "url": "real official docs url" }
+        {
+          "type": "video",
+          "title": "YouTube: topic tutorial for beginners",
+          "url": "https://www.youtube.com/results?search_query=topic+tutorial+for+beginners"
+        },
+        {
+          "type": "article",
+          "title": "W3Schools or MDN: topic",
+          "url": "https://www.w3schools.com/js/"
+        },
+        {
+          "type": "docs",
+          "title": "Official documentation",
+          "url": "https://reactjs.org"
+        }
       ]
     }
   ],
@@ -46,7 +58,12 @@ Return this exact JSON:
   "hookTip": "one motivating insight"
 }
 
-Make 8 weeks total. Return ONLY the JSON.`,
+STRICT RULES:
+1. YouTube URL MUST be: https://www.youtube.com/results?search_query=TOPIC+tutorial+for+beginners — replace TOPIC with real week topic, use + between words
+2. Article MUST be real URL from w3schools.com or developer.mozilla.org
+3. Docs MUST be real official docs URL for the exact technology
+4. Make exactly 8 weeks
+Return ONLY the JSON.`,
         },
       ],
       temperature: 0.3,
@@ -56,6 +73,22 @@ Make 8 weeks total. Return ONLY the JSON.`,
     const text = response.choices[0].message.content;
     const match = text.match(/\{[\s\S]*\}/);
     const data = JSON.parse(match[0]);
+
+    // Force fix YouTube URLs
+    data.weeks = data.weeks.map(week => ({
+      ...week,
+      resources: week.resources?.map(r => {
+        if (r.type === 'video') {
+          const query = week.title.replace(/\s+/g, '+').toLowerCase();
+          return {
+            ...r,
+            url: `https://www.youtube.com/results?search_query=${query}+tutorial+for+beginners`
+          };
+        }
+        return r;
+      })
+    }));
+
     return Response.json(data);
   } catch (err) {
     console.error('ERROR:', err.message);
