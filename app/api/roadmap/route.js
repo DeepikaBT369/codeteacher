@@ -66,7 +66,7 @@ STRICT RULES:
 Return ONLY the JSON.`,
         },
       ],
-      temperature: 0.3,
+      temperature: 0.1,
       max_tokens: 4000,
     });
 
